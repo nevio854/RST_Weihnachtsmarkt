@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Permanenter Terminplaner (5 Termine)</title>
+    <style>
+        /* CSS bleibt größtenteils gleich */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #e9ecef; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        h1 { color: #dc3545; text-align: center; margin-bottom: 20px; }
+        p { text-align: center; margin-bottom: 30px; color: #555; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #dee2e6; padding: 15px; text-align: left; }
+        th { background-color: #dc3545; color: white; width: 150px; font-size: 1.1em; } /* Farbe geändert für "Speichern" */
+        
+        input[type="text"] { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ced4da; 
+            border-radius: 6px; 
+            box-sizing: border-box; 
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            border-color: #b00020;
+            box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+        }
+
+        .info-box {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        /* Den unnötigen Button entfernen */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weihnachtsmarkt RST Termine</h1>
+        
+        
+        
+
+        <table id="appointment-table">
+            <thead>
+                <tr>
+                    <th>Uhrzeit</th>
+                    <th>Termin 1</th>
+                    <th>Termin 2</th>
+                    <th>Termin 3</th>
+                    <th>Termin 4</th>
+                    <th>Termin 5</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+        
+        </div>
+
+    <script>
+        const STORAGE_KEY = 'dailyAppointments';
+        const startHour = 1;
+        const endHour = 24; 
+        const appointmentsPerSlot = 5;
+        const tableBody = document.querySelector('#appointment-table tbody');
+
+        /**
+         * Lädt die gespeicherten Termine aus dem LocalStorage.
+         * @returns {Object} Ein Objekt mit den Terminen oder ein leeres Objekt.
+         */
+        function loadAppointments() {
+            try {
+                const storedData = localStorage.getItem(STORAGE_KEY);
+                return storedData ? JSON.parse(storedData) : {};
+            } catch (e) {
+                console.error("Fehler beim Laden der Termine:", e);
+                return {};
+            }
+        }
+
+        /**
+         * Speichert alle aktuellen Termine in den LocalStorage.
+         */
+        function saveAppointments() {
+            const appointments = {};
+            
+            for (let h = startHour; h < endHour; h++) {
+                const timeSlot = `${h}:00 - ${h + 1}:00`;
+                const slotAppointments = [];
+                
+                for (let i = 1; i <= appointmentsPerSlot; i++) {
+                    const input = document.getElementById(`appt-${h}-${i}`);
+                    if (input) {
+                        slotAppointments.push(input.value.trim());
+                    }
+                }
+                
+                // Speichern nur, wenn mindestens ein Slot nicht leer ist, um Speicher zu sparen
+                if (slotAppointments.some(appt => appt !== "")) {
+                     appointments[timeSlot] = slotAppointments;
+                }
+            }
+            
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appointments));
+                // Optionale Konsolenmeldung zur Bestätigung
+                // console.log("Termine automatisch gespeichert!");
+            } catch (e) {
+                console.error("Fehler beim Speichern der Termine:", e);
+            }
+        }
+
+        /**
+         * Generiert die Tabelle und lädt die gespeicherten Werte.
+         */
+        function generateAndLoadSchedule() {
+            const savedAppointments = loadAppointments();
+
+            for (let h = startHour; h < endHour; h++) {
+                const timeSlot = `${h}:00 - ${h + 1}:00`;
+                const row = tableBody.insertRow();
+                
+                // 1. Zelle für die Uhrzeit
+                const timeCell = row.insertCell();
+                timeCell.textContent = timeSlot;
+                
+                // Termine für diesen Slot
+                const appointmentsForSlot = savedAppointments[timeSlot] || [];
+                
+                // 2., 3. und 4. Zellen für die Eingabefelder
+                for (let i = 1; i <= appointmentsPerSlot; i++) {
+                    const appointmentCell = row.insertCell();
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = `Termin ${i}`;
+                    input.id = `appt-${h}-${i}`; 
+                    
+                    // Wert aus LocalStorage setzen, falls vorhanden
+                    if (appointmentsForSlot[i - 1]) {
+                        input.value = appointmentsForSlot[i - 1];
+                    }
+                    
+                    // Event-Listener: Speichern bei jeder Änderung
+                    input.addEventListener('input', saveAppointments);
+
+                    appointmentCell.appendChild(input);
+                }
+            }
+        }
+
+        // Tabelle beim Laden der Seite generieren und gespeicherte Daten laden
+        generateAndLoadSchedule();
+    </script>
+</body>
+</html>
